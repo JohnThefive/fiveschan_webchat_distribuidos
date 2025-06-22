@@ -1,0 +1,71 @@
+{% extends 'base.html'%}
+{% block content %}
+
+<div class="message-box" role="region" aria-label="Área de Chat">
+    <h2>Sala de Chat:{{room}}</h2>
+
+    <div class="messages" id="messages" aria-live="polite" aria-relevant="additions">
+        <!-- Mensagens aparecerão aqui dinamicamente -->
+    </div>
+
+    <form class="inputs" onsubmit="sendMessage(); return false;">
+        <label for="message" class="sr-only">Digite sua mensagem</label>
+        <input 
+            type="text"
+            placeholder="Digite sua mensagem..."
+            name="message"
+            id="message"
+            autocomplete="off"
+            required
+        />
+        <button type="submit" name="send" id="send-btn">
+            Enviar
+        </button>
+    </form>
+</div>
+ <!-- Parte importante do trabalho de distribuidos - inicinado socketIO -->
+<script type="text/javascript">
+    var socketio = io();
+
+    const mensagensDiv = document.getElementById("messages");
+
+    // Função para criar e exibir uma nova mensagem
+    const createMensagem = (name, msg) => {
+        const content = `
+            <div class="text">
+                <span><strong>${name}</strong>: ${msg}</span>
+                <span class="muted" style="float: right; font-size: 0.8em; color: #777;">
+                    ${new Date().toLocaleTimeString()}
+                </span>
+            </div>
+        `;
+        mensagensDiv.innerHTML += content;
+        mensagensDiv.scrollTop = mensagensDiv.scrollHeight; // Rola para a mensagem mais recente
+    };
+
+    // Ouve pelo evento 'message' 
+    socketio.on("message", (data) => {
+        // Usa a chave 'message' 
+        createMensagem(data.name, data.message);
+    });
+
+    // Função para enviar uma mensagem
+    const sendMessage = () => {
+        const mensagemInput = document.getElementById("message");
+        if (mensagemInput.value === "") return;
+
+        // Envia o objeto com a chave 'message' 
+        socketio.emit("message", { "message": mensagemInput.value });
+        
+        mensagemInput.value = ""; // Limpa o campo
+    };
+</script>
+
+{% for msg in messages %}
+<script type="text/javascript">
+    createMensagem("{{msg.name}}", "{{msg.message}}");
+
+</script>
+
+
+{% endblock %}
