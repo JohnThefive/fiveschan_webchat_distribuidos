@@ -1,33 +1,19 @@
-
-{% extends 'base.html'%}
+<!-- templates/pagina_inicial.html -->
+{% extends 'base.html' %}
+{% block title %}Bem-vindo{% endblock %}
 {% block content %}
-
-<div class="form-container">
-    <form method="post" class="login-form">
-        <h3>Entre no FivesChan</h3>
-
-        <div class="form-group">
-            <label for="name_input">Nome de Usuário:</label>
-            <input type="text" id="name_input" name="name" placeholder="Escolha um nome de usuário" value="{{name}}">
-            {% if error %}
-            <ul>
-                <li>
-                   {{error}} 
-                </li>
-            </ul>
-            {% endif %}
-        </div>
-
-        <div class="form-group join-group">
-            <label for="code_input">Código da Sala:</label>
-            <input type="text" id="code_input" name="code" placeholder="Insira o código da sala" value="{{code}}">
-            <button type="submit" name="join" class="btn-join">Entrar na Sala</button>
-        </div>
-
-        <div class="form-group">
-             <button type="submit" name="create" class="btn-create">Criar uma nova Sala</button>
-        </div>
-    </form>
-</div>
-
+<form method="post" class="text-center">
+    <h3 class="mb-4">Entrar ou Criar uma Sala</h3>
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <div class="form-group mb-3">
+        <input type="text" class="form-control" placeholder="Digite seu nome" name="name" value="{{ name }}">
+    </div>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" placeholder="Código da Sala" name="code" value="{{ code }}">
+        <button type="submit" name="join" class="btn btn-primary">Entrar</button>
+    </div>
+    <button type="submit" name="create" class="btn btn-success w-100">Criar uma Nova Sala</button>
+</form>
 {% endblock %}

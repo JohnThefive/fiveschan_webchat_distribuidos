@@ -1,70 +1,67 @@
-{% extends 'base.html'%}
+{% extends 'base.html' %}
+{% block title %}Sala {{ room }}{% endblock %}
 {% block content %}
-
-<div class="message-box" role="region" aria-label="Área de Chat">
-    <h2>Sala de Chat:{{room}}</h2>
-
-    <div class="messages" id="messages" aria-live="polite" aria-relevant="additions">
-        <!-- Mensagens aparecerão aqui dinamicamente -->
-    </div>
-
-    <form class="inputs" onsubmit="sendMessage(); return false;">
-        <label for="message" class="sr-only">Digite sua mensagem</label>
-        <input 
-            type="text"
-            placeholder="Digite sua mensagem..."
-            name="message"
-            id="message"
-            autocomplete="off"
-            required
-        />
-        <button type="submit" name="send" id="send-btn">
-            Enviar
-        </button>
-    </form>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Sala: <span class="badge bg-secondary">{{ room }}</span></h3>
+    <span>Olá, <strong>{{ name }}</strong>!</span>
 </div>
- <!-- Parte importante do trabalho de distribuidos - inicinado socketIO -->
-<script type="text/javascript">
-    var socketio = io();
+<div class="chat-box" id="chat-box">
+    <!-- As mensagens serão inseridas aqui pelo JavaScript -->
+</div>
+<div class="message-form">
+    <input type="text" id="message-input" class="form-control" placeholder="Digite sua mensagem...">
+    <button id="send-button" class="btn btn-primary ms-2">Enviar</button>
+</div>
+{% endblock %}
 
-    const mensagensDiv = document.getElementById("messages");
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const socket = io();
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
 
-    // Função para criar e exibir uma nova mensagem
-    const createMensagem = (name, msg) => {
-        const content = `
-            <div class="text">
-                <span><strong>${name}</strong>: ${msg}</span>
-                <span class="muted" style="float: right; font-size: 0.8em; color: #777;">
-                    ${new Date().toLocaleTimeString()}
-                </span>
-            </div>
-        `;
-        mensagensDiv.innerHTML += content;
-        mensagensDiv.scrollTop = mensagensDiv.scrollHeight; // Rola para a mensagem mais recente
-    };
+        // --- FUNÇÃO PARA EXIBIR MENSAGENS ---
+        // Criamos uma função para evitar repetir código.
+        function displayMessage(messageText) {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = messageText;
+            // Insere a nova mensagem no topo da caixa de chat
+            chatBox.prepend(messageElement); 
+        }
 
-    // Ouve pelo evento 'message' 
-    socketio.on("message", (data) => {
-        // Usa a chave 'message' 
-        createMensagem(data.name, data.message);
+        socket.on('connect', () => {
+            console.log("Conectado ao gateway via WebSocket!");
+        });
+
+        // Ouve por 'server_message' do gateway (mensagens de outras pessoas)
+        socket.on('server_message', (msg) => {
+            displayMessage(msg.data);
+        });
+
+        // --- FUNÇÃO PARA ENVIAR MENSAGENS ---
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                // 1. Exibe a sua própria mensagem imediatamente na tela
+                displayMessage(`[Você] ${message}`);
+                
+                // 2. Envia 'client_message' para o gateway (para que os outros vejam)
+                socket.emit('client_message', { data: message });
+                
+                // 3. Limpa o campo e foca nele novamente
+                messageInput.value = '';
+                messageInput.focus();
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
     });
-
-    // Função para enviar uma mensagem
-    const sendMessage = () => {
-        const mensagemInput = document.getElementById("message");
-        if (mensagemInput.value === "") return;
-
-        // Envia o objeto com a chave 'message' 
-        socketio.emit("message", { "message": mensagemInput.value });
-        
-        mensagemInput.value = ""; // Limpa o campo
-    };
 </script>
-
-{% for msg in messages %}
-<script type="text/javascript">
-    createMensagem("{{msg.name}}", "{{msg.message}}");
-</script>
-{% endfor %}
-
 {% endblock %}
