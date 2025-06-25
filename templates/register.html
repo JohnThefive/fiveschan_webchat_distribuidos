@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>Registro</title>
+</head>
+<body>
+    <h1>Registro de Novo Usuário</h1>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+        <label for="username">Usuário:</label><br />
+        <input type="text" id="username" name="username" required /><br /><br />
+
+        <label for="password">Senha:</label><br />
+        <input type="password" id="password" name="password" required /><br /><br />
+
+        <label for="confirm">Confirme a Senha:</label><br />
+        <input type="password" id="confirm" name="confirm" required /><br /><br />
+
+        <button type="submit">Cadastrar</button>
+    </form>
+
+    <p>Já tem conta? <a href="{{ url_for('login') }}">Faça login aqui</a></p>
+</body>
+</html>

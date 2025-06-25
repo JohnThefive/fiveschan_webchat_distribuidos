@@ -1,0 +1,39 @@
+import sqlite3
+import bcrypt
+
+class Database:
+    def __init__(self, db_path="chat.db"):
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.create_user_table()
+        # Remova as tabelas que não vai usar por enquanto:
+        # self.create_message_table()
+        # self.create_group_tables()
+
+    def create_user_table(self):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password_hash BLOB NOT NULL
+            )
+        """)
+        self.conn.commit()
+
+    def user_exists(self, username):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT 1 FROM users WHERE username=?", (username,))
+        return cursor.fetchone() is not None
+
+    def create_user(self, username, password_plain):
+        password_hash = bcrypt.hashpw(password_plain.encode(), bcrypt.gensalt())
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, password_hash))
+        self.conn.commit()
+
+    def verify_password(self, username, password_plain):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT password_hash FROM users WHERE username=?", (username,))
+        result = cursor.fetchone()
+        if result:
+            return bcrypt.checkpw(password_plain.encode(), result[0])
+        return False

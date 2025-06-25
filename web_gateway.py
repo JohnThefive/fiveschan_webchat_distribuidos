@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_socketio import SocketIO, emit
 import socket
@@ -7,8 +6,14 @@ import random
 from string import ascii_uppercase
 import os 
 from dotenv import load_dotenv
+from user import UserManager
+from db import Database
+import bcrypt
 
-# importando a chave
+db = Database()
+user_manager = UserManager(db)
+
+# importando a chave do .env
 load_dotenv()
 
 # --- Configurações ---
@@ -31,10 +36,8 @@ tcp_threads = {}
 
 # --- Lógica da Ponte ---
 def listen_from_tcp(sid, tcp_sock):
-   
-    #Roda em uma thread para ouvir o servidor TCP e retransmitir para o browser.
+    # Roda em uma thread para ouvir o servidor TCP e retransmitir para o browser.
     # Isto cumpre o requisito de uma thread dedicada à recepção.
-    
     while True:
         try:
             data = tcp_sock.recv(BUFFER_SIZE)
@@ -53,8 +56,45 @@ def generate_unique_code(length):
     # Apenas geramos um código aleatório.
     return "".join(random.choice(ascii_uppercase) for _ in range(length))
 
+# ROTA LOGIN
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        # Autentica usando user_manager
+        if user_manager.authenticate(username, password):
+            session["name"] = username
+            return redirect(url_for("pagina_inicial"))
+        else:
+            return render_template("login.html", error="Usuário ou senha incorretos.")
+    return render_template("login.html")
+
+
+# ROTA REGISTRO DE NOVO USUÁRIO
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        confirm = request.form["confirm"]
+        if password != confirm:
+            return render_template("register.html", error="As senhas não coincidem.")
+        if user_manager.register(username, password):
+            return redirect(url_for("login"))
+        else:
+            return render_template("register.html", error="Usuário já existe.")
+    return render_template("register.html")
+
+
+# ROTA PÁGINA INICIAL (após login)
 @app.route("/", methods=["POST", "GET"])
 def pagina_inicial():
+    # Verifica se usuário está logado
+    if "name" not in session:
+        return redirect(url_for("login"))
+    
+    # Limpa sessão anterior para evitar conflito ao criar/juntar sala
     session.clear()
     if request.method == "POST":
         name = request.form.get("name")
@@ -78,6 +118,8 @@ def pagina_inicial():
 
     return render_template("pagina_inicial.html")
 
+
+# ROTA DA SALA DE CHAT
 @app.route("/room")
 def room_page():
     room = session.get("room")
@@ -85,6 +127,7 @@ def room_page():
     if room is None or name is None:
         return redirect(url_for("pagina_inicial"))
     return render_template("room.html", room=room, name=name)
+
 
 # --- Lógica do SocketIO (A Ponte) ---
 @socketio.on('connect')
@@ -118,6 +161,7 @@ def handle_connect():
         print(f"[GATEWAY] Erro ao criar ponte para {sid}: {e}")
         emit('server_message', {'data': 'ERRO: Não foi possível conectar ao servidor de chat.'})
 
+
 @socketio.on('client_message')
 def handle_client_message(data):
     sid = request.sid
@@ -127,6 +171,7 @@ def handle_client_message(data):
             tcp_sockets[sid].send(message.encode('utf-8'))
         except Exception as e:
             print(f"[GATEWAY] Erro ao enviar mensagem para TCP: {e}")
+
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -144,6 +189,7 @@ def handle_disconnect():
     
     if sid in tcp_threads:
         del tcp_threads[sid]
+
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", debug=True)
