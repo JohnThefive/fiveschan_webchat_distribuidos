@@ -1,21 +1,19 @@
-#Biblioteca de criptografia
-import bcrypt
 
 class UserManager:
     def __init__(self, db):
         self.db = db
-    #Vê se o nome já existe. Se não existir:Criptografa a senha e Guarda no banco
+
+# Verifica se o usuário já existe. Se não, delega a criação do usuário (incluindo o hashing da senha) 
+# para a classe Database.
     def register(self, username, password):
         if self.db.user_exists(username):
-            return False
-        password_bytes = password.encode('utf-8')
-        hashed_password = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
-        self.db.create_user(username, hashed_password)
+            return False  # Retorna False se o usuário já existe
+        self.db.create_user(username, password)
         return True
-    #Quando você faz login:Ele pega a senha guardada e Compara com a que você digitou (de forma segura)
+    
+# Delega a autenticação inteiramente para a classe Database.
+# O método 'verify_password' já faz a busca do hash e a comparação segura.
     def authenticate(self, username, password):
-        stored_hash = self.db.get_user_password_hash(username)
-        if not stored_hash:
-            return False
-        password_bytes = password.encode('utf-8')
-        return bcrypt.checkpw(password_bytes, stored_hash)
+        # Este método faz tudo: busca o usuário e confere se a senha bate.
+        # Retorna True se a autenticação for bem-sucedida, False caso contrário.
+        return self.db.verify_password(username, password)

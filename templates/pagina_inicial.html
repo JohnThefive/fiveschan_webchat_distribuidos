@@ -1,19 +1,13 @@
-<!-- templates/pagina_inicial.html -->
 {% extends 'base.html' %}
 {% block title %}Bem-vindo{% endblock %}
 {% block content %}
-<form method="post" class="text-center">
-    <h3 class="mb-4">Entrar ou Criar uma Sala</h3>
-    {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
-    <div class="form-group mb-3">
-        <input type="text" class="form-control" placeholder="Digite seu nome" name="name" value="{{ name }}">
+<div class="text-center">
+    <h1 class="mb-4">Bem-vindo ao Nosso Chat!</h1>
+    <p class="lead mb-5">Faça login para continuar ou registre-se se você for novo por aqui.</p>
+    
+    <div class="d-grid gap-3 col-6 mx-auto">
+        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Login</a>
+        <a href="{{ url_for('register') }}" class="btn btn-success btn-lg">Registrar</a>
     </div>
-    <div class="input-group mb-3">
-        <input type="text" class="form-control" placeholder="Código da Sala" name="code" value="{{ code }}">
-        <button type="submit" name="join" class="btn btn-primary">Entrar</button>
-    </div>
-    <button type="submit" name="create" class="btn btn-success w-100">Criar uma Nova Sala</button>
-</form>
+</div>
 {% endblock %}

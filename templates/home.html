@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Salas de Chat{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="mb-0">Bem-vindo, {{ name }}!</h3>
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-secondary">Sair</a>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <!-- Card para Criar ou Entrar em Salas -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Criar ou Entrar em uma Sala</h5>
+                <form method="post" action="{{ url_for('home') }}">
+                    <!-- Criar uma sala pública -->
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Nome da nova sala pública" name="create_room_name">
+                        <button type="submit" name="create" class="btn btn-success">Criar Sala</button>
+                    </div>
+                    <!-- Entrar com código -->
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Código de uma sala privada" name="code">
+                        <button type="submit" name="join" class="btn btn-primary">Entrar com Código</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de Salas Públicas Disponíveis -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Salas Públicas Disponíveis</h5>
+                <div class="list-group">
+                    {% for room in rooms %}
+                        <a href="{{ url_for('room_page', room_code=room.code) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            {{ room.name }}
+                            <span class="badge bg-primary rounded-pill">{{ room.user_count }}</span>
+                        </a>
+                    {% else %}
+                        <div class="list-group-item">
+                            <p class="mb-0 text-muted">Nenhuma sala pública foi criada ainda. Crie a primeira!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+ 
