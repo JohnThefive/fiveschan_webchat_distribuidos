@@ -1,19 +1,32 @@
-
 class UserManager:
     def __init__(self, db):
         self.db = db
 
-# Verifica se o usuário já existe. Se não, delega a criação do usuário (incluindo o hashing da senha) 
-# para a classe Database.
     def register(self, username, password):
+        if not username or not password:
+            print("[MANAGER-ERROR] Tentativa de registro com usuário ou senha vazios.")
+            return False
         if self.db.user_exists(username):
-            return False  # Retorna False se o usuário já existe
-        self.db.create_user(username, password)
-        return True
+            print(f"[MANAGER-INFO] Tentativa de registro falhou: usuário '{username}' já existe.")
+            return False
+        try:
+            self.db.create_user(username, password)
+            print(f"[MANAGER-INFO] Usuário '{username}' registrado com sucesso.")
+            return True
+        except Exception as e:
+            print(f"[MANAGER-ERROR] Erro ao registrar usuário '{username}': {e}")
+            return False
     
-# Delega a autenticação inteiramente para a classe Database.
-# O método 'verify_password' já faz a busca do hash e a comparação segura.
     def authenticate(self, username, password):
-        # Este método faz tudo: busca o usuário e confere se a senha bate.
-        # Retorna True se a autenticação for bem-sucedida, False caso contrário.
-        return self.db.verify_password(username, password)
+        if not username or not password:
+            return False
+        try:
+            is_valid = self.db.verify_password(username, password)
+            if is_valid:
+                print(f"[MANAGER-INFO] Autenticação bem-sucedida para '{username}'.")
+            else:
+                print(f"[MANAGER-INFO] Autenticação falhou para '{username}'.")
+            return is_valid
+        except Exception as e:
+            print(f"[MANAGER-ERROR] Erro ao autenticar usuário '{username}': {e}")
+            return False

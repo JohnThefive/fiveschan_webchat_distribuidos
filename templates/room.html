@@ -1,12 +1,45 @@
 {% extends 'base.html' %}
-{% block title %}Sala {{ room }}{% endblock %}
+{% block title %}Sala: {{ room }}{% endblock %}
+
+<!-- ADICIONANDO UM POUCO DE CSS PARA O CHAT FICAR MAIS BONITO -->
+{% block styles %}
+<style>
+    .chat-box {
+        height: 60vh; /* Altura de 60% da tela */
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 15px;
+        overflow-y: auto; /* Adiciona uma barra de rolagem se o conteúdo transbordar */
+        display: flex;
+        flex-direction: column; /* Mensagens uma embaixo da outra */
+        margin-bottom: 15px;
+        background-color: #f9f9f9;
+    }
+    .message-form {
+        display: flex;
+    }
+    .message {
+        background-color: #e9ecef;
+        padding: 8px 12px;
+        border-radius: 15px;
+        margin-bottom: 10px;
+        max-width: 70%;
+        align-self: flex-start; /* Mensagens dos outros alinhadas à esquerda */
+    }
+    .my-message {
+        background-color: #0d6efd;
+        color: white;
+        align-self: flex-end; /* Nossas mensagens alinhadas à direita */
+    }
+</style>
+{% endblock %}
+
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Sala: <span class="badge bg-secondary">{{ room }}</span></h3>
-    <!-- Agrupando o nome e o novo botão -->
     <div class="d-flex align-items-center">
         <span class="me-3">Olá, <strong>{{ name }}</strong>!</span>
-        <!-- botão de saida do chat -->
         <a href="{{ url_for('home') }}" class="btn btn-danger btn-sm">Sair da Sala</a>
     </div>
 </div>
@@ -16,55 +49,64 @@
 </div>
 
 <div class="message-form">
+    <!-- IDs dos elementos estão corretos -->
     <input type="text" id="message-input" class="form-control" placeholder="Digite sua mensagem...">
     <button id="send-button" class="btn btn-primary ms-2">Enviar</button>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<!-- O Socket.IO precisa ser importado, seu base.html deve ter isso. Se não tiver, adicione esta linha. -->
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const socket = io();
         const chatBox = document.getElementById('chat-box');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
+        
+        // Pega o nome do usuário da sessão Flask para comparar
+        const currentUsername = "{{ name }}";
 
+        // Uma única função para exibir mensagens.
         function displayMessage(messageText) {
             const messageElement = document.createElement('div');
+            
+            // Extrai o nome de usuário da mensagem, ex: de "[Lara] Olá" pega "Lara"
+            const authorMatch = messageText.match(/^\[(.*?)\]/);
+            const author = authorMatch ? authorMatch[1] : null;
+
+            // Adiciona classes CSS para estilização
+            messageElement.classList.add('message');
+            if (author === currentUsername) {
+                // Se o autor da mensagem for o usuário atual, adiciona uma classe especial
+                messageElement.classList.add('my-message');
+            }
+
             messageElement.textContent = messageText;
-            // Adiciona as novas mensagens no final, para a ordem ficar correta.
             chatBox.appendChild(messageElement);
-            // Auto-scroll para a última mensagem
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-        
-        // Modificação na função original para exibir a mensagem na ordem correta
-        function displayOwnMessage(messageText) {
-             const messageElement = document.createElement('div');
-             // Adiciona uma classe para poder estilizar suas próprias mensagens de forma diferente, se quiser
-             messageElement.classList.add('my-message'); 
-             messageElement.textContent = messageText;
-             chatBox.appendChild(messageElement);
-             chatBox.scrollTop = chatBox.scrollHeight;
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
         }
 
         socket.on('connect', () => {
-            console.log("Conectado ao gateway via WebSocket!");
+            console.log("Conectado ao gateway via WebSocket! SID:", socket.id);
         });
 
+        // Evento que recebe TODAS as mensagens do servidor (histórico e tempo real)
         socket.on('server_message', (msg) => {
             displayMessage(msg.data);
         });
 
+        // Função que APENAS envia a mensagem para o servidor
         function sendMessage() {
             const message = messageInput.value.trim();
             if (message) {
-                // Exibe a sua própria mensagem
-                displayOwnMessage(`[Você] ${message}`);
-                
-                // Envia a mensagem para os outros
+                // ALTERAÇÃO CRÍTICA: Não exibe mais a mensagem localmente.
+                // Apenas envia o evento para o servidor.
                 socket.emit('client_message', { data: message });
                 
+                // Limpa o input e foca para a próxima mensagem.
                 messageInput.value = '';
                 messageInput.focus();
             }
@@ -73,9 +115,13 @@
         sendButton.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault(); // Previne o comportamento padrão do Enter em formulários
                 sendMessage();
             }
         });
+
+        // Mensagem inicial para o usuário saber que conectou
+        displayMessage('Conectado à sala. Carregando histórico...');
     });
 </script>
 {% endblock %}
