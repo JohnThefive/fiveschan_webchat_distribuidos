@@ -3,11 +3,18 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Sala: <span class="badge bg-secondary">{{ room }}</span></h3>
-    <span>Olá, <strong>{{ name }}</strong>!</span>
+    <!-- Agrupando o nome e o novo botão -->
+    <div class="d-flex align-items-center">
+        <span class="me-3">Olá, <strong>{{ name }}</strong>!</span>
+        <!-- botão de saida do chat -->
+        <a href="{{ url_for('home') }}" class="btn btn-danger btn-sm">Sair da Sala</a>
+    </div>
 </div>
+
 <div class="chat-box" id="chat-box">
     <!-- As mensagens serão inseridas aqui pelo JavaScript -->
 </div>
+
 <div class="message-form">
     <input type="text" id="message-input" class="form-control" placeholder="Digite sua mensagem...">
     <button id="send-button" class="btn btn-primary ms-2">Enviar</button>
@@ -22,35 +29,42 @@
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
 
-        // --- FUNÇÃO PARA EXIBIR MENSAGENS ---
-        // Criamos uma função para evitar repetir código.
         function displayMessage(messageText) {
             const messageElement = document.createElement('div');
             messageElement.textContent = messageText;
-            // Insere a nova mensagem no topo da caixa de chat
-            chatBox.prepend(messageElement); 
+            // Adiciona as novas mensagens no final, para a ordem ficar correta.
+            chatBox.appendChild(messageElement);
+            // Auto-scroll para a última mensagem
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Modificação na função original para exibir a mensagem na ordem correta
+        function displayOwnMessage(messageText) {
+             const messageElement = document.createElement('div');
+             // Adiciona uma classe para poder estilizar suas próprias mensagens de forma diferente, se quiser
+             messageElement.classList.add('my-message'); 
+             messageElement.textContent = messageText;
+             chatBox.appendChild(messageElement);
+             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         socket.on('connect', () => {
             console.log("Conectado ao gateway via WebSocket!");
         });
 
-        // Ouve por 'server_message' do gateway (mensagens de outras pessoas)
         socket.on('server_message', (msg) => {
             displayMessage(msg.data);
         });
 
-        // --- FUNÇÃO PARA ENVIAR MENSAGENS ---
         function sendMessage() {
             const message = messageInput.value.trim();
             if (message) {
-                // 1. Exibe a sua própria mensagem imediatamente na tela
-                displayMessage(`[Você] ${message}`);
+                // Exibe a sua própria mensagem
+                displayOwnMessage(`[Você] ${message}`);
                 
-                // 2. Envia 'client_message' para o gateway (para que os outros vejam)
+                // Envia a mensagem para os outros
                 socket.emit('client_message', { data: message });
                 
-                // 3. Limpa o campo e foca nele novamente
                 messageInput.value = '';
                 messageInput.focus();
             }
