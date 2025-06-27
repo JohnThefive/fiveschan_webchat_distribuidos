@@ -36,13 +36,12 @@
         <!-- Lista de Salas Disponíveis -->
         <div class="card shadow-sm">
             <div class="card-body">
-                <!-- ALTERAÇÃO CRÍTICA: Mudança no texto para "Salas Disponíveis" -->
                 <h5 class="card-title mb-3">Salas Disponíveis</h5>
-                <div class="list-group">
-                    
-                    <!-- ALTERAÇÃO CRÍTICA: O loop agora itera sobre uma lista simples de nomes de sala -->
+
+                <!--Adicionando barra de pesquisa-->
+                <input type="text" id = "barra-pesquisa" class="form-control mb-3" placeholder="Pesquisar sala..." oninput="filterRooms()">
+                <div class="list-group" id="room-list">
                     {% for room_name in rooms %}
-                        <!-- Cada 'room_name' é uma string. Não existe mais 'room.code' ou 'room.name' -->
                         <a href="{{ url_for('room_page', room_identifier=room_name) }}" class="list-group-item list-group-item-action">
                             {{ room_name }}
                         </a>
@@ -54,6 +53,22 @@
                 </div>
             </div>
         </div>
+        <script>
+            function filterRooms() {
+                const searchInput = document.getElementById('barra-pesquisa').value.toLowerCase();
+                const roomList = document.getElementById('room-list');
+                const rooms = roomList.getElementsByClassName('list-group-item-action');
+        
+                for (let room of rooms) {
+                    const roomName = room.textContent.toLowerCase();
+                    if (roomName.includes(searchInput)) {
+                        room.style.display = '';
+                    } else {
+                        room.style.display = 'none';
+                    }
+                }
+            }
+        </script>
 
     </div>
 </div>
