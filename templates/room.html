@@ -95,7 +95,12 @@
 
         // Evento que recebe TODAS as mensagens do servidor (histórico e tempo real)
         socket.on('server_message', (msg) => {
-            displayMessage(msg.data);
+            const messages = Array.isArray(msg.data) ? msg.data : msg.data.split('\n'); // Divide por quebra de linha
+            messages.forEach((message) => {
+                if (message.trim()) { // Ignora mensagens vazias
+                    displayMessage(message.trim());
+                }
+            });
         });
 
         // Função que APENAS envia a mensagem para o servidor
