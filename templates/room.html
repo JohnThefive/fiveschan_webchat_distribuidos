@@ -85,7 +85,7 @@
             }
 
             messageElement.textContent = messageText;
-            chatBox.appendChild(messageElement);
+            chatBox.prepend(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
         }
 

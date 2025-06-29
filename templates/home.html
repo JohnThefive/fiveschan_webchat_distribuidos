@@ -55,13 +55,13 @@
         </div>
         <script>
             function filterRooms() {
-                const searchInput = document.getElementById('barra-pesquisa').value.toLowerCase();
+                const searchInput = document.getElementById('barra-pesquisa').value.trim().toLowerCase();
                 const roomList = document.getElementById('room-list');
                 const rooms = roomList.getElementsByClassName('list-group-item-action');
         
                 for (let room of rooms) {
-                    const roomName = room.textContent.toLowerCase();
-                    if (roomName.includes(searchInput)) {
+                    const roomName = room.textContent.trim().toLowerCase();
+                    if (roomName.startsWith(searchInput)) {
                         room.style.display = '';
                     } else {
                         room.style.display = 'none';
