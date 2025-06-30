@@ -65,7 +65,7 @@ def pro_cliente(conn, addr):
                 history = db.get_messages_by_sala(room_code)
                 for msg_tuple in history:
                     formatted_msg = f"[{msg_tuple[2]}] {msg_tuple[1]}"
-                    conn.send(formatted_msg.encode(FORMAT))
+                    conn.send((formatted_msg + "\n").encode(FORMAT))
                 print(f"[HISTÓRICO] Enviado {len(history)} mensagens do DB para {name} na sala {room_code}.")
             except Exception as e:
                 print(f"[ERRO DB] Falha ao buscar histórico para a sala {room_code}: {e}")
