@@ -6,11 +6,12 @@ import socket
 import threading
 import os
 import json
-
+from dotenv import load_dotenv
 
 from user import UserManager
 from db import Database
 
+load_dotenv()
 db = Database()
 user_manager = UserManager(db)
 
