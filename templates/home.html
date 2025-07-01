@@ -1,67 +1,153 @@
-<!-- templates/home.html (Versão Final e Corrigida) -->
-
 {% extends 'base.html' %}
 {% block title %}Salas de Chat{% endblock %}
+
+{% block page_styles %}
+<style>
+    /* Fundo da página com o gradiente roxo */
+    .home-dark-theme {
+        background-color: #4e416c;
+        background-image: linear-gradient(to right top, #4e416c, #554877, #5d4f82, #65568d, #6d5d99);
+        color: #e9ecef;
+    }
+
+    /* Estilo do card com efeito translúcido (glassmorphism) */
+    .card-dark {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+    }
+
+    /* Estilos para os inputs no tema escuro */
+    .card-dark .form-control {
+        background-color: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+    .card-dark .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    .card-dark .form-control:focus {
+        background-color: rgba(0, 0, 0, 0.3);
+        border-color: #0d6efd;
+        color: white;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Estilo dos itens da lista de salas */
+    .card-dark .list-group-item {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: #e9ecef;
+    }
+    /* Efeito hover para os itens da lista */
+    .card-dark .list-group-item-action:hover,
+    .card-dark .list-group-item-action:focus {
+        background-color: rgba(13, 110, 253, 0.2);
+        color: #fff;
+        border-color: rgba(13, 110, 253, 0.5);
+    }
+    
+    /* Botão azul customizado */
+    .btn-custom-blue {
+        font-weight: bold;
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        background-size: 200% auto;
+        background-image: linear-gradient(to right, #0d6efd 0%, #0d6efd 50%, #0a58ca 100%);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.4s ease-in-out;
+    }
+    /* Efeito hover para o botão (elevação) */
+    .btn-custom-blue:hover {
+        background-position: right center;
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+    .btn-custom-blue:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block body_class %}home-dark-theme{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-7">
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="mb-0">Bem-vindo, {{ name }}!</h3>
-            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-secondary">Sair</a>
+        <!-- Cabeçalho: Saudação ao usuário e botão de logout -->
+        <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+            <h2 class="mb-0 fw-light">
+                <i class="bi bi-chat-dots-fill me-2"></i>Bem-vindo, <span class="fw-bold">{{ name }}</span>!
+            </h2>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-light">
+                <i class="bi bi-box-arrow-left me-1"></i>Sair
+            </a>
         </div>
 
+        <!-- Exibição de mensagens de erro -->
         {% if error %}
-            <div class="alert alert-danger">{{ error }}</div>
+            <div class="alert alert-danger d-flex align-items-center" role="alert" style="background-color: rgba(220, 53, 69, 0.3); border: none; color: white;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <div>{{ error }}</div>
+            </div>
         {% endif %}
 
-        <!-- Card UNIFICADO para Criar ou Entrar em Salas -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Entrar ou Criar uma Sala</h5>
-                <p class="card-text text-muted">Digite o nome exato de uma sala para entrar, ou digite um nome novo para criá-la.</p>
+        <!-- Card para entrar ou criar sala -->
+        <div class="card card-dark shadow-lg mb-4">
+            <div class="card-body p-4">
+                <h5 class="card-title"><i class="bi bi-door-open-fill me-2"></i>Entrar ou Criar uma Sala</h5>
+                <p class="card-text text-white-50">Digite o nome de uma sala para entrar ou crie uma nova.</p>
                 
-                <!-- ALTERAÇÃO CRÍTICA: Um único formulário com um único campo -->
                 <form method="post" action="{{ url_for('home') }}">
                     <div class="input-group">
-                        <!-- O 'name' do input é 'room_name', como o gateway espera -->
-                        <input type="text" class="form-control" placeholder="Nome da Sala" name="room_name" required>
-                        <button type="submit" class="btn btn-primary">Entrar / Criar</button>
+                        <input type="text" class="form-control form-control-lg" placeholder="Nome da Sala" name="room_name" required>
+                        <button type="submit" class="btn btn-custom-blue">Entrar / Criar</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Lista de Salas Disponíveis -->
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title mb-3">Salas Disponíveis</h5>
+        <!-- Card com a lista de salas disponíveis -->
+        <div class="card card-dark shadow-lg">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-3"><i class="bi bi-list-ul me-2"></i>Salas Disponíveis</h5>
 
-                <!--Adicionando barra de pesquisa-->
-                <input type="text" id = "barra-pesquisa" class="form-control mb-3" placeholder="Pesquisar sala..." oninput="filterRooms()">
+                <!-- Barra de pesquisa de salas -->
+                <div class="input-group mb-3">
+                    <span class="input-group-text" style="background-color: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.2);"><i class="bi bi-search text-white-50"></i></span>
+                    <input type="text" id="barra-pesquisa" class="form-control" placeholder="Pesquisar sala..." oninput="filterRooms()">
+                </div>
+                
+                <!-- Loop para listar as salas -->
                 <div class="list-group" id="room-list">
                     {% for room_name in rooms %}
                         <a href="{{ url_for('room_page', room_identifier=room_name) }}" class="list-group-item list-group-item-action">
                             {{ room_name }}
                         </a>
                     {% else %}
+                        <!-- Mensagem exibida se não houver salas -->
                         <div class="list-group-item">
-                            <p class="mb-0 text-muted">Nenhuma sala ativa no momento. Crie a primeira!</p>
+                            <p class="mb-0 text-white-50">Nenhuma sala ativa no momento. Crie a primeira!</p>
                         </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
+        
+        <!-- Script para o filtro da busca em tempo real -->
         <script>
             function filterRooms() {
                 const searchInput = document.getElementById('barra-pesquisa').value.trim().toLowerCase();
                 const roomList = document.getElementById('room-list');
-                const rooms = roomList.getElementsByClassName('list-group-item-action');
+                const rooms = roomList.querySelectorAll('.list-group-item-action');
         
                 for (let room of rooms) {
                     const roomName = room.textContent.trim().toLowerCase();
-                    if (roomName.startsWith(searchInput)) {
+                    if (roomName.includes(searchInput)) {
                         room.style.display = '';
                     } else {
                         room.style.display = 'none';

@@ -1,132 +1,323 @@
 {% extends 'base.html' %}
 {% block title %}Sala: {{ room }}{% endblock %}
 
-<!-- ADICIONANDO UM POUCO DE CSS PARA O CHAT FICAR MAIS BONITO -->
-{% block styles %}
+{% block page_styles %}
 <style>
-    .chat-box {
-        height: 60vh; /* Altura de 60% da tela */
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        padding: 15px;
-        overflow-y: auto; /* Adiciona uma barra de rolagem se o conteúdo transbordar */
-        display: flex;
-        flex-direction: column; /* Mensagens uma embaixo da outra */
-        margin-bottom: 15px;
-        background-color: #f9f9f9;
+    /* Tema principal da página de chat - mantendo consistência visual */
+    .chat-page-theme {
+        background-color: #4e416c;
+        background-image: linear-gradient(to right top, #4e416c, #554877, #5d4f82, #65568d, #6d5d99);
+        color: #e9ecef;
     }
+
+    /* Cabeçalho fixo com informações da sala */
+    .chat-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    /* Container principal das mensagens - scroll reverso */
+    .chat-box {
+        height: 70vh;
+        background-color: #40355e;
+        border-radius: 1rem;
+        padding: 10px 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse;
+        margin-bottom: 1rem;
+        gap: 15px;
+    }
+
+    /* Personalização da barra de rolagem */
+    .chat-box::-webkit-scrollbar {
+        width: 8px;
+    }
+    .chat-box::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+    }
+    .chat-box::-webkit-scrollbar-thumb {
+        background-color: #594a85;
+        border-radius: 10px;
+        border: 2px solid #40355e;
+    }
+
+    /* Animação de entrada suave para novas mensagens */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Container flex para alinhar avatar e mensagem */
+    .message-wrapper {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Estilo base do balão de mensagem */
+    .message {
+        padding: 10px 18px;
+        border-radius: 18px;
+        max-width: 85%;
+        line-height: 1.4;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Mensagens do usuário atual (estilo diferenciado) */
+    .my-message {
+        background-color: #e67e22;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    .my-message-wrapper {
+        justify-content: flex-end;
+    }
+
+    /* Mensagens de outros participantes */
+    .other-message {
+        background-color: #594a85;
+        color: #f1f1f1;
+        border-bottom-left-radius: 4px;
+    }
+    
+    /* Avatar circular com iniciais */
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    /* Estilo do nome do autor na mensagem */
+    .message .author {
+        font-weight: bold;
+        font-size: 0.8em;
+        margin-bottom: 4px;
+        opacity: 0.8;
+    }
+    
+    /* Timestamp discreto na mensagem */
+    .message .timestamp {
+        font-size: 0.7em;
+        align-self: flex-end;
+        opacity: 0.7;
+        margin-top: 5px;
+    }
+    
+    /* Mensagens do sistema (entrada/saída de usuários) */
+    .system-message {
+        font-style: italic;
+        color: #a5b1c2;
+        font-size: 0.85em;
+        text-align: center;
+        width: 100%;
+        padding: 10px 0;
+    }
+
+    /* Formulário fixo de envio de mensagens */
     .message-form {
         display: flex;
+        gap: 10px;
     }
-    .message {
-        background-color: #e9ecef;
-        padding: 8px 12px;
-        border-radius: 15px;
-        margin-bottom: 10px;
-        max-width: 70%;
-        align-self: flex-start; /* Mensagens dos outros alinhadas à esquerda */
+    #message-input {
+        background-color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 10px 20px;
+        color: #333;
+        flex-grow: 1;
+        transition: box-shadow 0.2s;
     }
-    .my-message {
-        background-color: #0d6efd;
+    #message-input:focus {
+        box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.4);
+    }
+
+    /* Botão de envio com efeitos interativos */
+    .btn-send {
+        background-color: #1abc9c;
         color: white;
-        align-self: flex-end; /* Nossas mensagens alinhadas à direita */
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-send:hover {
+        background-color: #16a085;
+        transform: scale(1.1);
+    }
+    .btn-send:active {
+        transform: scale(0.95);
     }
 </style>
 {% endblock %}
 
+{% block body_class %}chat-page-theme{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>Sala: <span class="badge bg-secondary">{{ room }}</span></h3>
+<!-- Cabeçalho com nome da sala e usuário -->
+<div class="d-flex justify-content-between align-items-center mb-3 chat-header">
+    <h3 class="mb-0"><i class="bi bi-chat-right-text-fill me-2"></i>Sala: {{ room }}</h3>
     <div class="d-flex align-items-center">
         <span class="me-3">Olá, <strong>{{ name }}</strong>!</span>
-        <a href="{{ url_for('home') }}" class="btn btn-danger btn-sm">Sair da Sala</a>
+        <a href="{{ url_for('home') }}" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-door-closed-fill me-1"></i>Sair da Sala
+        </a>
     </div>
 </div>
 
+<!-- Container das mensagens (preenchido via JavaScript) -->
 <div class="chat-box" id="chat-box">
-    <!-- As mensagens serão inseridas aqui pelo JavaScript -->
+    <!-- As mensagens serão inseridas aqui dinamicamente -->
 </div>
 
+<!-- Formulário de envio de mensagens -->
 <div class="message-form">
-    <!-- IDs dos elementos estão corretos -->
-    <input type="text" id="message-input" class="form-control" placeholder="Digite sua mensagem...">
-    <button id="send-button" class="btn btn-primary ms-2">Enviar</button>
+    <input type="text" id="message-input" class="form-control" placeholder="Digite uma mensagem...">
+    <button id="send-button" class="btn btn-send">
+        <i class="bi bi-send-fill" style="margin-left: 2px;"></i>
+    </button>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<!-- O Socket.IO precisa ser importado, seu base.html deve ter isso. -->
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // Conexão com o servidor Socket.IO
         const socket = io();
         const chatBox = document.getElementById('chat-box');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
-        
-        // Pega o nome do usuário da sessão Flask para comparar
         const currentUsername = "{{ name }}";
 
-        // Uma única função para exibir mensagens.
-        function displayMessage(messageText) {
-            const messageElement = document.createElement('div');
-            
-            // Extrai o nome de usuário da mensagem, ex: de "[Lara] Olá" pega "Lara"
-            const authorMatch = messageText.match(/^\[(.*?)\]/);
-            const author = authorMatch ? authorMatch[1] : null;
+        // Gera iniciais para o avatar a partir do nome
+        const getInitials = (name) => {
+            const names = name.split(' ');
+            return names.length > 1 ? names[0][0] + names[names.length - 1][0] : name.substring(0, 2);
+        };
 
-            // Adiciona classes CSS para estilização
-            messageElement.classList.add('message');
-            if (author === currentUsername) {
-                // Se o autor da mensagem for o usuário atual, adiciona uma classe especial
-                messageElement.classList.add('my-message');
+        // Paleta de cores para os avatares
+        const avatarColors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c'];
+        
+        // Gera cor consistente para cada usuário
+        const getColorForName = (name) => {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return avatarColors[Math.abs(hash % avatarColors.length)];
+        };
+
+        // Exibe uma mensagem no chat (própria, de outros ou do sistema)
+        function displayMessage(msgData) {
+            // Mensagens do sistema (texto simples)
+            if (typeof msgData === 'string') {
+                const systemMsgElement = document.createElement('div');
+                systemMsgElement.classList.add('system-message');
+                systemMsgElement.textContent = msgData;
+                chatBox.prepend(systemMsgElement);
+                return;
             }
 
-            messageElement.textContent = messageText;
-            chatBox.prepend(messageElement);
-            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+            // Extrai dados da mensagem
+            const { author, content, timestamp } = msgData;
+            
+            // Cria container da mensagem
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('message-wrapper');
+            
+            // Cria elemento da mensagem
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+
+            // Elementos internos da mensagem
+            const authorElement = document.createElement('span');
+            authorElement.classList.add('author');
+            authorElement.textContent = author;
+            
+            const contentElement = document.createElement('p');
+            contentElement.classList.add('content');
+            contentElement.textContent = content;
+
+            const timeElement = document.createElement('span');
+            timeElement.classList.add('timestamp');
+            timeElement.textContent = timestamp || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+            // Monta estrutura da mensagem
+            messageElement.appendChild(authorElement);
+            messageElement.appendChild(contentElement);
+            messageElement.appendChild(timeElement);
+            
+            // ---- LÓGICA DE EXIBIÇÃO DIFERENCIADA ----
+            if (author === currentUsername) {
+                // Mensagem do usuário atual (alinhada à direita)
+                wrapper.classList.add('my-message-wrapper');
+                messageElement.classList.add('my-message');
+                wrapper.appendChild(messageElement);
+            } else {
+                // Mensagem de outros usuários (com avatar)
+                const avatar = document.createElement('div');
+                avatar.classList.add('avatar');
+                avatar.style.backgroundColor = getColorForName(author);
+                avatar.textContent = getInitials(author).toUpperCase();
+
+                messageElement.classList.add('other-message');
+                wrapper.appendChild(avatar);
+                wrapper.appendChild(messageElement);
+            }
+
+            // Adiciona ao chat (no topo, devido ao flex-direction: column-reverse)
+            chatBox.prepend(wrapper);
         }
 
-        socket.on('connect', () => {
-            console.log("Conectado ao gateway via WebSocket! SID:", socket.id);
-        });
-
-        // Evento que recebe TODAS as mensagens do servidor (histórico e tempo real)
+        // Eventos do Socket.IO
+        socket.on('connect', () => console.log("Conectado ao servidor de chat"));
+        
+        // Recebe mensagens do servidor
         socket.on('server_message', (msg) => {
-            const messages = Array.isArray(msg.data) ? msg.data : msg.data.split('\n'); // Divide por quebra de linha
-            messages.forEach((message) => {
-                if (message.trim()) { // Ignora mensagens vazias
-                    displayMessage(message.trim());
+            const messages = Array.isArray(msg.data) ? msg.data : (typeof msg.data === 'string' ? msg.data.split('\n') : [msg.data]);
+            messages.forEach((messageData) => {
+                if (typeof messageData === 'object' && messageData.author && messageData.content) {
+                    displayMessage(messageData);
+                } else if (typeof messageData === 'string' && messageData.trim()) {
+                    const match = messageData.trim().match(/^\[(.*?)\]\s*(.*)/);
+                    if (match) displayMessage({ author: match[1], content: match[2] });
                 }
             });
         });
 
-        // Função que APENAS envia a mensagem para o servidor
+        // Envia mensagem para o servidor
         function sendMessage() {
             const message = messageInput.value.trim();
             if (message) {
-                // ALTERAÇÃO CRÍTICA: Não exibe mais a mensagem localmente.
-                // Apenas envia o evento para o servidor.
                 socket.emit('client_message', { data: message });
-                
-                // Limpa o input e foca para a próxima mensagem.
                 messageInput.value = '';
                 messageInput.focus();
             }
         }
 
+        // Event listeners
         sendButton.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Previne o comportamento padrão do Enter em formulários
+                e.preventDefault();
                 sendMessage();
             }
         });
-
-        // Mensagem inicial para o usuário saber que conectou
-        displayMessage('Conectado à sala. Carregando histórico...');
     });
 </script>
 {% endblock %}
