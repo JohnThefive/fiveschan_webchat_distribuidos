@@ -25,7 +25,7 @@ tcp_threads = {}  # Mantém as threads de escuta ativas
 # Lista de servidores disponíveis (ALTERADO: Adicionado suporte a múltiplos servidores)
 SERVERS = [
     {"ip": "127.0.0.1", "chat_port": 5566, "info_port": 5567},
-    {"ip": "127.0.0.1", "chat_port": 5546, "info_port": 5577},
+    {"ip": "127.0.0.1", "chat_port": 5576, "info_port": 5577},
 ]
 
 # Função para verificar servidores ativos (ALTERADO: Implementada para failover)
