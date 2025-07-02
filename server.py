@@ -1,23 +1,22 @@
 import socket
 import threading
 import json
-from db import Database # NOVO: Importa a classe do banco de dados
+from db import Database
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
-
-# --- Configurações (sem alterações) ---
-IP = "127.0.0.1"
-CHAT_PORT = 5566
-INFO_PORT = 5567
+# --- Configurações (ALTERADO: IP e portas configuráveis via .env) ---
+IP = os.getenv("SERVER_IP", "127.0.0.1")  # IP do servidor configurável
+CHAT_PORT = int(os.getenv("CHAT_PORT", 5566))  # Porta de chat configurável
+INFO_PORT = int(os.getenv("INFO_PORT", 5567))  # Porta de informações configurável
 ADDR_CHAT = (IP, CHAT_PORT)
 ADDR_INFO = (IP, INFO_PORT)
 FORMAT = "utf-8"
 DISCONNECT_MSG = "!DESCONECTAR"
 SIZE = 1024
 
-# --- Inicialização (sem alterações) ---
+# --- Inicialização ---
 db = Database()
 rooms = {}
 rooms_lock = threading.Lock()
@@ -25,10 +24,9 @@ rooms_lock = threading.Lock()
 def broadcast(message, room_code, sender_conn, sender_name_override=None):
     with rooms_lock:
         if room_code not in rooms:
-            return # Se a sala não existe mais, não faz nada
+            return
             
         sender_name = sender_name_override if sender_name_override is not None else rooms[room_code]["membros"].get(sender_conn, "Alguém")
-        
         full_message = f"[{sender_name}] {message}"
         
         try:
@@ -92,7 +90,6 @@ def pro_cliente(conn, addr):
     finally:
         broadcast_leave_message = False
         if room_code and name:
-            # CORREÇÃO: Verificamos se a sala ainda existe antes de tentar acessá-la
             with rooms_lock:
                 if room_code in rooms and conn in rooms[room_code]["membros"]:
                     del rooms[room_code]["membros"][conn]
@@ -100,8 +97,6 @@ def pro_cliente(conn, addr):
                     
                     broadcast_leave_message = True
                     
-                    # Ele verifica se a lista de membros está vazia e, se estiver,
-                    # remove a sala do dicionário em memória.
                     if not rooms[room_code]["membros"]:
                         del rooms[room_code]
                         print(f"[SALA VAZIA] Sala {room_code} removida da memória.")
@@ -111,7 +106,7 @@ def pro_cliente(conn, addr):
         conn.close()
         print(f"[CONEXÃO FECHADA] {addr}.")
 
-# --- Funções do Servidor de Informações e Main (sem alterações) ---
+# --- Funções do Servidor de Informações e Main ---
 def info_server_handler():
     info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     info_socket.bind(ADDR_INFO)
