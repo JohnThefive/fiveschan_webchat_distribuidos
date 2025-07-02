@@ -9,10 +9,9 @@ Este repositório contém o código-fonte de um sistema de chat. Abaixo você en
 Clone este repositório ou baixe o código-fonte manualmente:
 
 ```bash
-git clone https://github.com/seu-usuario/seu-repositorio.git
-cd seu-repositorio
+git clone git@github.com:JohnThefive/fiveschan_webchat_distribuidos.git
+cd fiveschan_webchat_distribuidos.git
 ```
-
 ---
 
 ## 🐍 Ambiente Virtual (venv)
