@@ -55,7 +55,7 @@ def listen_from_tcp(sid, tcp_sock):
 
 def get_rooms_from_server():
     try:
-        server = get_active_server()  # ALTERADO: Busca o servidor ativo
+        server = get_active_server()  
         if not server:
             return []
         info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
