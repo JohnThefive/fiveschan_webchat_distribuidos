@@ -11,25 +11,29 @@ from dotenv import load_dotenv
 from user import UserManager
 from db import Database
 
+# Carrega variáveis de ambiente
 load_dotenv()
 db = Database()
 user_manager = UserManager(db)
 
+# Configuração do Flask e SocketIO
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 socketio = SocketIO(app)
 
+# Estruturas para gerenciar conexões TCP e threads
 tcp_sockets = {}  # Mantém os sockets TCP ativos
 tcp_threads = {}  # Mantém as threads de escuta ativas
 
-# Lista de servidores disponíveis (ALTERADO: Adicionado suporte a múltiplos servidores)
+# Lista de servidores disponíveis
 SERVERS = [
     {"ip": "127.0.0.1", "chat_port": 5566, "info_port": 5567},
     {"ip": "127.0.0.1", "chat_port": 5576, "info_port": 5577},
 ]
 
-# Função para verificar servidores ativos (ALTERADO: Implementada para failover)
+# Função para verificar servidores ativos
 def get_active_server():
+    # Itera sobre a lista de servidores e verifica qual está ativo
     for server in SERVERS:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,9 +43,11 @@ def get_active_server():
             return server
         except Exception:
             continue
-    return None  # Nenhum servidor ativo
+    return None
 
+# Função para escutar mensagens do servidor TCP
 def listen_from_tcp(sid, tcp_sock):
+    # Escuta mensagens recebidas do servidor e as retransmite via SocketIO
     while True:
         try:
             data = tcp_sock.recv(1024)
@@ -53,16 +59,18 @@ def listen_from_tcp(sid, tcp_sock):
             break
     print(f"[GATEWAY] Thread de escuta para {sid} terminada.")
 
+# Função para buscar lista de salas do servidor ativo
 def get_rooms_from_server():
+    # Conecta ao servidor ativo e recupera a lista de salas disponíveis
     try:
-        server = get_active_server()  
+        server = get_active_server()  # Procura sempre o servidor ativo
         if not server:
             return []
         info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         info_socket.connect((server["ip"], server["info_port"]))
         data = info_socket.recv(4096).decode('utf-8')
         info_socket.close()
-        return json.loads(data)  # Retorna os nomes das salas
+        return json.loads(data)
     except Exception as e:
         print(f"[GATEWAY ERROR] Não foi possível buscar a lista de salas: {e}")
         return []
@@ -70,12 +78,14 @@ def get_rooms_from_server():
 # --- Rotas Flask ---
 @app.route("/")
 def index():
+    # Redireciona para a página de login ou home, dependendo da sessão
     if "name" in session:
         return redirect(url_for("home"))
     return redirect(url_for("login"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    # Gerencia o login do usuário
     if "name" in session:
         return redirect(url_for("home"))
     if request.method == "POST":
@@ -90,6 +100,7 @@ def login():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    # Gerencia o registro de novos usuários
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
@@ -106,11 +117,13 @@ def register():
 
 @app.route("/logout")
 def logout():
+    # Limpa a sessão e redireciona para a página de login
     session.clear()
     return redirect(url_for("login"))
 
 @app.route("/home", methods=["POST", "GET"])
 def home():
+    # Exibe a página inicial com a lista de salas disponíveis
     if "name" not in session:
         return redirect(url_for("login"))
 
@@ -128,6 +141,7 @@ def home():
 
 @app.route("/room/<string:room_identifier>")
 def room_page(room_identifier):
+    # Exibe a página de uma sala específica
     if "name" not in session or "room" not in session:
         return redirect(url_for("home"))
     return render_template("room.html", room=room_identifier, name=session.get("name"))
@@ -135,6 +149,7 @@ def room_page(room_identifier):
 # --- Lógica do SocketIO ---
 @socketio.on('connect')
 def handle_connect():
+    # Gerencia a conexão de um cliente via SocketIO
     sid = request.sid
     room = session.get("room")
     name = session.get("name")
@@ -142,7 +157,7 @@ def handle_connect():
     if not room or not name:
         return
 
-    server = get_active_server()  # ALTERADO: Busca o servidor ativo
+    server = get_active_server()
     if not server:
         emit('server_message', {'data': 'ERRO: Nenhum servidor ativo disponível.'})
         return
@@ -151,7 +166,7 @@ def handle_connect():
         tcp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp_client.connect((server["ip"], server["chat_port"]))
 
-        join_request = f"JOIN:{room}:{name}"  # ALTERADO: Formato de mensagem de JOIN atualizado
+        join_request = f"JOIN:{room}:{name}"
         tcp_client.send(join_request.encode('utf-8'))
 
         tcp_sockets[sid] = tcp_client
@@ -167,6 +182,7 @@ def handle_connect():
 
 @socketio.on('client_message')
 def handle_client_message(data):
+    # Envia mensagens do cliente para o servidor TCP
     sid = request.sid
     message = data.get('data')
     if sid in tcp_sockets and message:
@@ -177,6 +193,7 @@ def handle_client_message(data):
 
 @socketio.on('disconnect')
 def handle_disconnect():
+    # Gerencia a desconexão de um cliente
     sid = request.sid
     if sid in tcp_sockets:
         tcp_sock = tcp_sockets.pop(sid)
@@ -188,5 +205,6 @@ def handle_disconnect():
         del tcp_threads[sid]
     print(f"[GATEWAY] Cliente {sid} desconectado.")
 
+# Inicialização do servidor Flask com SocketIO
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)

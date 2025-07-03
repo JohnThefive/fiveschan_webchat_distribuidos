@@ -4,10 +4,12 @@ import base64
 import os
 from dotenv import load_dotenv
 
+# Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
 
 class Database:
     def __init__(self):
+        # Inicializa a conexão com o banco de dados
         try:
             self.conn = psycopg2.connect(
                 dbname=os.getenv("DB_NAME"),
@@ -16,13 +18,15 @@ class Database:
                 host=os.getenv("DB_HOST"),
                 port=os.getenv("DB_PORT")
             )
-            self.create_tables()
+            self.create_tables()  # Cria as tabelas necessárias
         except psycopg2.OperationalError as e:
+            # Logs de erro de conexao
             print(f"!!! ERRO CRÍTICO DE BANCO DE DADOS: Não foi possível conectar. Verifique suas credenciais no .env e se o PostgreSQL está rodando. !!!")
             print(f"Detalhe do erro: {e}")
             raise
 
     def create_tables(self):
+        # Cria as tabelas Sala, Usuario e Mensagem
         with self.conn.cursor() as cursor:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS Sala (
@@ -48,11 +52,13 @@ class Database:
         self.conn.commit()
 
     def sala_exists(self, nome_sala):
+        # Verifica se uma sala existe
         with self.conn.cursor() as cursor:
             cursor.execute("SELECT 1 FROM Sala WHERE Nome_Sala = %s", (nome_sala,))
             return cursor.fetchone() is not None
 
     def create_sala(self, nome_sala):
+        # Cria uma nova sala, se não existir
         if not self.sala_exists(nome_sala):
             with self.conn.cursor() as cursor:
                 cursor.execute("INSERT INTO Sala (Nome_Sala) VALUES (%s)", (nome_sala,))
@@ -61,11 +67,13 @@ class Database:
         return False
 
     def user_exists(self, nome):
+        # Verifica se um usuário existe
         with self.conn.cursor() as cursor:
             cursor.execute("SELECT 1 FROM Usuario WHERE Nome = %s", (nome,))
             return cursor.fetchone() is not None
 
     def create_user(self, nome, senha_plain):
+        # Cria um novo usuário com senha criptografada
         senha_hash = bcrypt.hashpw(senha_plain.encode(), bcrypt.gensalt())
         senha_b64 = base64.b64encode(senha_hash).decode('utf-8')
 
@@ -77,6 +85,7 @@ class Database:
         self.conn.commit()
 
     def verify_password(self, nome, senha_plain):
+        # Verifica se a senha fornecida corresponde à armazenada
         with self.conn.cursor() as cursor:
             cursor.execute("SELECT Senha FROM Usuario WHERE Nome = %s", (nome,))
             result = cursor.fetchone()
@@ -86,6 +95,7 @@ class Database:
         return False
 
     def add_message(self, conteudo, nome_usuario, nome_sala):
+        # Adiciona uma nova mensagem
         with self.conn.cursor() as cursor:
             cursor.execute(
                 "INSERT INTO Mensagem (conteudo, Nome, Nome_Sala) VALUES (%s, %s, %s)",
@@ -94,6 +104,7 @@ class Database:
         self.conn.commit()
 
     def get_messages_by_sala(self, nome_sala):
+        # Recupera todas as mensagens de uma sala
         with self.conn.cursor() as cursor:
             cursor.execute(
                 """
